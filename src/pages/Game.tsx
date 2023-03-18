@@ -32,7 +32,8 @@ export default function Game() {
     ws.connect();
 
     return function close() {
-      ws.connection.close(1000, 'unmounting component');
+      console.log('unmounting...');
+      ws.destroy();
     }
   }, [ws]);
 
