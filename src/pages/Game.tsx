@@ -1,50 +1,73 @@
-import { Avatar, Box, Stack, Typography } from "@mui/material";
+import {
+  Avatar,
+  Box,
+  Stack,
+  Typography,
+  Backdrop,
+  CircularProgress,
+} from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import AlertDialog from "../components/AlertDialog";
-import { useAppSelector } from "../hooks/redux";
+import { useAppDispatch, useAppSelector } from "../hooks/redux";
 import { newEvent } from "../helpers/websocket/utils";
 import WebsocketHandler from "../helpers/websocket/handler";
+import { RoomPayload } from "../helpers/websocket/events";
+import { setRoom } from "../slices/gameSlice";
 
 export default function Game() {
   const chess = useMemo(() => new Chess(), []);
-  const gameInit = useAppSelector(({ game }) => game.gameInit);
+  // const gameInit = useAppSelector(({ game }) => game.gameInit);
   const [eOpen, setEOpen] = useState(false);
 
-  const [allSet, setAllSet] = useState(false);
+  const [allset, setAllset] = useState(false);
 
   const auth = useAppSelector(({ auth }) => auth);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const params = useParams();
 
-  const ws = useMemo(
-    () => {
-      // console.log(auth.token);
-      return new WebsocketHandler(
-        `${process.env.REACT_APP_WS_URL}?token=${localStorage.getItem('token')}`
-      );
-    },
-    []
-  );
+  console.log("location", params);
+
+  const ws = useMemo(() => {
+    // console.log(auth.token);
+    return new WebsocketHandler(
+      `${process.env.REACT_APP_WS_URL}?token=${auth.token}`
+    );
+  }, [auth.token]);
 
   useEffect(() => {
+    if (auth.status !== "verified") {
+      setEOpen(true);
+      return;
+    }
+
     ws.connect();
 
-    return function close() {
-      console.log('unmounting...');
-      ws.destroy();
-    }
-  }, [ws]);
+    ws.connection.onopen = () => {
+      ws.sendEvent("join_room", {
+        room_id: params.id,
+      });
 
-  useEffect(() => {
-    if (
-      auth.status !== "verified" ||
-      (gameInit?.action === "join" && !gameInit.actionData?.gameId)
-    ) {
-      setEOpen(true);
-    }
-  }, [auth.status, gameInit?.action, gameInit?.actionData]);
+      ws.on("joined_room", (data: RoomPayload) => {
+        console.log("joined", data);
+        dispatch(setRoom(data));
+        setAllset(true);
+      });
+    };
+
+    return function close() {
+      ws.destroy();
+    };
+  }, [ws, auth.status, params.id, dispatch]);
+
+  // useEffect(() => {
+  //   if (auth.status !== "verified") {
+  //     setEOpen(true);
+  //   }
+  // }, [auth.status]);
 
   // useEffect(() => {
   //   try {
@@ -88,14 +111,13 @@ export default function Game() {
     );
   }
 
-  return (
+  return allset ? (
     <Box sx={{ p: 2, height: "100vh", width: "100%", position: "fixed" }}>
       <Stack
         justifyContent="center"
         alignItems="center"
         sx={{ width: "100%", height: "100%" }}
       >
-        <button onClick={() => setAllSet((prev) => !prev)}>ygy</button>
         <Box sx={{ width: "fit-content" }}>
           <Stack direction="row" sx={{ width: "100%", mb: 1 }}>
             <Avatar />
@@ -125,5 +147,12 @@ export default function Game() {
         </Box>
       </Stack>
     </Box>
+  ) : (
+    <Backdrop
+      sx={{ color: "#fff", Index: (theme) => theme.zIndex.drawer + 1 }}
+      open={true}
+    >
+      <CircularProgress color="inherit"/>
+    </Backdrop>
   );
 }

@@ -1,3 +1,4 @@
+import { RoomResponse } from "../../types/responses";
 
 export class WebsocketEvent<T> {
   constructor(
@@ -7,3 +8,5 @@ export class WebsocketEvent<T> {
 }
 
 export class Payload {}
+
+export type RoomPayload = RoomResponse;

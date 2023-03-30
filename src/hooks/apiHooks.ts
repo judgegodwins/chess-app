@@ -14,16 +14,6 @@ import {
 } from "../helpers/responseHelpers";
 import axiosHttp from "../utils/axiosHttp";
 
-// axiosHttp.interceptors.request.use(function (config) {
-//   return {  
-//     ...config,
-//     headers: {
-//       ...config.headers,
-//       Authorization: `Bearer ${getAccessToken()}`,
-//     },
-//   };
-// });
-
 export function usePagination<DataType>(
   serviceAction: (
     page: number,
@@ -53,10 +43,10 @@ export function usePagination<DataType>(
   return { loading, error, data, hasMore };
 }
 
-interface UsePostProps<TReturnType, TData extends FormikValues, T extends ObjectSchema<AnyObject>> {
+interface UsePostProps<TReturnType, TData extends FormikValues, T extends ObjectSchema<AnyObject> = any> {
   url: string;
   initialValues: TData;
-  schema: T;
+  schema?: T;
   type?: 'post' | 'patch';
   notify?: boolean;
   onComplete?: (data: TReturnType) => any;
@@ -95,6 +85,7 @@ export function usePost<TReturnType, TData extends FormikValues, TShape extends 
   });
 
   return {
+    message,
     data,
     error,
     formik,

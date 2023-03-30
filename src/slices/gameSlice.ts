@@ -1,31 +1,25 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import { RoomResponse } from "../types/responses";
 
 export interface GameState {
-  gameInit?: {
-    action: "start" | "join" | "";
-    actionData?: {
-      gameId: string;
-    };
-  };
+  room?: RoomResponse;
 }
 
 const initialState: GameState = {
-  gameInit: {
-    action: ""
-  },
+  room: undefined,
 };
 
 export const gameSlice = createSlice({
   name: "game",
   initialState,
   reducers: {
-    setGameInit: (state, action: PayloadAction<GameState["gameInit"]>) => {
-      state.gameInit = action.payload;
+    setRoom: (state, action: PayloadAction<RoomResponse>) => {
+      state.room = action.payload;
     },
   },
 });
 
-export const { setGameInit } = gameSlice.actions;
+export const { setRoom } = gameSlice.actions;
 
 export default gameSlice.reducer;

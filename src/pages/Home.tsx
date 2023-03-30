@@ -13,8 +13,9 @@ import { PlayArrow, Keyboard } from "@mui/icons-material";
 import UserEdu from "../svg/useredu.svg";
 import { AuthDialog } from "../components/AuthDialog";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
-import { setGameInit } from "../slices/gameSlice";
+// import { setGameInit } from "../slices/gameSlice";
 import { updateAuth, verifyToken } from "../slices/authSlice";
+import Service from "../services";
 
 const CustomContainer = styled("div")(({ theme }) => ({
   width: "100%",
@@ -42,13 +43,11 @@ export default function Home() {
     switch (auth.status) {
       case "unverified":
         return setUnameDialogOpen(true);
-      case "verified":
-        return navigate("/game");
       case "verifying":
       default:
         return;
     }
-  }, [auth.status, navigate]);
+  }, [auth.status]);
 
   useEffect(() => {
     if (!localStorage.getItem("token")) return;
@@ -68,7 +67,7 @@ export default function Home() {
             })
           );
 
-          navigate('/game');
+          setUnameDialogOpen(false);
         }}
       />
       <Box>
@@ -97,13 +96,14 @@ export default function Home() {
             variant="contained"
             startIcon={<PlayArrow />}
             onClick={() => {
-              dispatch(
-                setGameInit({
-                  action: "start",
-                })
-              );
-
-              actionLine();
+              if (auth.status === "verified") {
+                Service.createRoom()
+                  .then(({ data }) => {
+                    navigate(`/live/${data.data.id}`);
+                  });
+              } else {
+                actionLine();
+              }
             }}
           >
             New game
@@ -139,16 +139,16 @@ export default function Home() {
               <Button
                 variant="text"
                 sx={{ ml: 1 }}
-                disabled={gameId.length < 36}
+                disabled={gameId.length < 1}
                 onClick={() => {
-                  dispatch(
-                    setGameInit({
-                      action: "join",
-                      actionData: {
-                        gameId,
-                      },
-                    })
-                  );
+                  // dispatch(
+                  //   setGameInit({
+                  //     action: "join",
+                  //     actionData: {
+                  //       gameId,
+                  //     },
+                  //   })
+                  // );
 
                   actionLine();
                 }}

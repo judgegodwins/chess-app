@@ -34,3 +34,15 @@ export interface CreateTokenResponse extends VerifyTokenResponse {
   token: string;
 }
 
+interface Client {
+  id: string;
+  socket_id: string;
+  username: string;
+}
+
+export interface RoomResponse {
+  id: string;
+  clients: Client[];
+  game_state: string;
+  creator: string;
+}
