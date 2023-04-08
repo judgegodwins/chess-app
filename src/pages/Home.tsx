@@ -49,10 +49,10 @@ export default function Home() {
     }
   }, [auth.status]);
 
-  useEffect(() => {
-    if (!localStorage.getItem("token")) return;
-    dispatch(verifyToken());
-  }, [dispatch]);
+  // useEffect(() => {
+  //   if (!localStorage.getItem("token")) return;
+  //   dispatch(verifyToken());
+  // }, [dispatch]);
 
   return (
     <CustomContainer>
@@ -97,10 +97,9 @@ export default function Home() {
             startIcon={<PlayArrow />}
             onClick={() => {
               if (auth.status === "verified") {
-                Service.createRoom()
-                  .then(({ data }) => {
-                    navigate(`/live/${data.data.id}`);
-                  });
+                Service.createRoom().then(({ data }) => {
+                  navigate(`/live/${data.data.id}`);
+                });
               } else {
                 actionLine();
               }
@@ -141,16 +140,13 @@ export default function Home() {
                 sx={{ ml: 1 }}
                 disabled={gameId.length < 1}
                 onClick={() => {
-                  // dispatch(
-                  //   setGameInit({
-                  //     action: "join",
-                  //     actionData: {
-                  //       gameId,
-                  //     },
-                  //   })
-                  // );
-
-                  actionLine();
+                  if (auth.status === "verified") {
+                    Service.checkRoom(gameId).then(({ data }) => {
+                      navigate(`/live/${gameId}`);
+                    }).catch(err => console.log('err verifying room', err));
+                  } else {
+                    actionLine();
+                  }
                 }}
               >
                 Join

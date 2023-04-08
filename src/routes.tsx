@@ -3,6 +3,7 @@ import Game from "./pages/Game";
 
 // import { useAppSelector } from "hooks/reduxHooks";
 import Home from "./pages/Home";
+import Verify from "./pages/Verify";
 
 export default function Router() {
   // const loggedIn = useAppSelector(({ auth }) => auth.loggedIn);
@@ -10,12 +11,13 @@ export default function Router() {
   return useRoutes([
     {
       path: "/",
-      element: <Home />,
+      element: <Verify />,
+      children: [
+        { path: "/", element: <Home /> },
+        { path: "live/:id", element: <Game /> },
+      ],
     },
-    {
-      path: "/live/:id",
-      element: <Game />,
-    },
+
     // {
     //   path: "/",
     //   children: [

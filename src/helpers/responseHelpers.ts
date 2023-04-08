@@ -3,6 +3,7 @@ import { FailureResponse, SuccessResponse } from "../types/responses";
 import { ApiError } from "./ApiError";
 
 export const apiErrorParser = (e: Error | AxiosError<FailureResponse>) => {
+  console.log('code:', (e as any).code, (e as any).response);
   if (axios.isAxiosError(e) && e.response) {
     throw new ApiError(e.response?.data.message, e.response);
   } else {

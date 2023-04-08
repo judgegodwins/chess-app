@@ -1,3 +1,4 @@
+import { Box, CircularProgress, Stack } from "@mui/material";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -9,7 +10,9 @@ export default function AlertDialog(props: {
   title: string;
   contentText: string;
   open: boolean;
-  handleClose: React.MouseEventHandler;
+  alertOnly?: boolean;
+  extraContent?: JSX.Element;
+  handleClose?: React.MouseEventHandler;
 }) {
   return (
     <Dialog
@@ -17,19 +20,31 @@ export default function AlertDialog(props: {
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title">
-        {props.title}
-      </DialogTitle>
+      <DialogTitle id="alert-dialog-title">{props.title}</DialogTitle>
       <DialogContent>
-        <DialogContentText id="alert-dialog-description">
-          {props.contentText}
-        </DialogContentText>
+        <Stack direction="row" spacing={2}>
+          {props.alertOnly && (
+            <Box>
+              <CircularProgress />
+            </Box>
+          )}
+
+          <Stack spacing={2}>
+            <DialogContentText id="alert-dialog-description">
+              {props.contentText}
+            </DialogContentText>
+
+            {props.extraContent}
+          </Stack>
+        </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={props.handleClose} autoFocus>
-          OK
-        </Button>
-      </DialogActions>
+      {!props.alertOnly && (
+        <DialogActions>
+          <Button onClick={props.handleClose} autoFocus>
+            OK
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 }

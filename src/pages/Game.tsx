@@ -5,6 +5,11 @@ import {
   Typography,
   Backdrop,
   CircularProgress,
+  Chip,
+  List,
+  Button,
+  ListItem,
+  ListItemText,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -16,18 +21,28 @@ import { newEvent } from "../helpers/websocket/utils";
 import WebsocketHandler from "../helpers/websocket/handler";
 import { RoomPayload } from "../helpers/websocket/events";
 import { setRoom } from "../slices/gameSlice";
+import { ContentCopy } from "@mui/icons-material";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { Client } from "../types/responses";
 
 export default function Game() {
-  const chess = useMemo(() => new Chess(), []);
-  // const gameInit = useAppSelector(({ game }) => game.gameInit);
-  const [eOpen, setEOpen] = useState(false);
+  const auth = useAppSelector(({ auth }) => auth);
+  const game = useAppSelector(({ game }) => game);
 
+  const chess = useMemo(() => new Chess(game.room?.game_state), []);
+  // const gameInit = useAppSelector(({ game }) => game.gameInit);
+  const [eOpen, setEOpen] = useState<{
+    head: string;
+    explanation: string
+  } | null>(null);
+
+  const [joined, setJoined] = useState(false);
   const [allset, setAllset] = useState(false);
 
-  const auth = useAppSelector(({ auth }) => auth);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const params = useParams();
+  const [requestingPlayers, setRequestingPlayers] = useState<Client[]>([]);
 
   console.log("location", params);
 
@@ -40,7 +55,11 @@ export default function Game() {
 
   useEffect(() => {
     if (auth.status !== "verified") {
-      setEOpen(true);
+      console.log('auth.status', auth.status);
+      setEOpen({
+        head: "Failed to initialize game",
+        explanation: "Something went wrong. We could not start the game."
+      });
       return;
     }
 
@@ -54,8 +73,25 @@ export default function Game() {
       ws.on("joined_room", (data: RoomPayload) => {
         console.log("joined", data);
         dispatch(setRoom(data));
-        setAllset(true);
+        setJoined(true);
       });
+
+      ws.on("requested_join", (data: Client) => {
+        setRequestingPlayers((prev) => [...prev, data]);
+      });
+
+      ws.on("start_game", (data: Client) => {
+        setRequestingPlayers([]);
+        setAllset(true)
+        setJoined(true)
+      });
+
+      ws.on('conn_elsewhere', () => {
+        setEOpen({
+          head: "Connected elsewhere",
+          explanation: "You've been disconnected from the game on this tab because you have joined the game from another tab."
+        });
+      })
     };
 
     return function close() {
@@ -101,9 +137,9 @@ export default function Game() {
     // if any error occurred
     return (
       <AlertDialog
-        title="Failed to initialize game"
-        contentText="Something went wrong. We could not start the game."
-        open={eOpen}
+        title={eOpen.head}
+        contentText={eOpen.explanation}
+        open={Boolean(eOpen)}
         handleClose={() => {
           navigate("/");
         }}
@@ -111,48 +147,101 @@ export default function Game() {
     );
   }
 
-  return allset ? (
-    <Box sx={{ p: 2, height: "100vh", width: "100%", position: "fixed" }}>
-      <Stack
-        justifyContent="center"
-        alignItems="center"
-        sx={{ width: "100%", height: "100%" }}
-      >
-        <Box sx={{ width: "fit-content" }}>
-          <Stack direction="row" sx={{ width: "100%", mb: 1 }}>
-            <Avatar />
-            <Stack sx={{ ml: 1 }}>
-              <Typography variant="subtitle1">Martin</Typography>
-            </Stack>
-          </Stack>
-          <Stack direction="row">
-            <Box
-              sx={(theme) => ({
-                width: "40vw",
-                height: "100%",
-                [theme.breakpoints.down("md")]: {
-                  width: "100vw",
-                },
-              })}
-            >
-              <Chessboard />
+  return joined ? (
+    <>
+      <AlertDialog
+        title="Someone requested to join"
+        contentText={`The user${requestingPlayers.length > 1 ? 's' : ''} below has requested to join as your opponent. You can only select one opponent`}
+        alertOnly
+        extraContent={
+          <List sx={{ width: "100%" }}>
+            {requestingPlayers.map((player) => (
+              <ListItem
+                key={player.id}
+                secondaryAction={<Button onClick={() => {
+                  ws.sendEvent("accept_join_request", {
+                    room_id: game.room?.id,
+                    player_id: player.socket_id,
+                  });
+                }}>Accept</Button>}
+                disablePadding
+              >
+                <ListItemText primary={player.username} />
+              </ListItem>
+            ))}
+          </List>
+        }
+        open={requestingPlayers.length > 0}
+      />
+      {allset ? (
+        <Box sx={{ p: 2, height: "100vh", width: "100%", position: "fixed" }}>
+          <Stack
+            justifyContent="center"
+            alignItems="center"
+            sx={{ width: "100%", height: "100%" }}
+          >
+            <Box sx={{ width: "fit-content" }}>
+              <Stack direction="row" sx={{ width: "100%", mb: 1 }}>
+                <Avatar />
+                <Stack sx={{ ml: 1 }}>
+                  <Typography variant="subtitle1">Martin</Typography>
+                </Stack>
+              </Stack>
+              <Stack direction="row">
+                <Box
+                  sx={(theme) => ({
+                    width: "40vw",
+                    height: "100%",
+                    [theme.breakpoints.down("md")]: {
+                      width: "100vw",
+                    },
+                  })}
+                >
+                  <Chessboard />
+                </Box>
+              </Stack>
+              <Stack direction="row" sx={{ width: "100%", mt: 1 }}>
+                <Avatar />
+                <Stack sx={{ ml: 1 }}>
+                  <Typography variant="subtitle1">Judge</Typography>
+                </Stack>
+              </Stack>
             </Box>
           </Stack>
-          <Stack direction="row" sx={{ width: "100%", mt: 1 }}>
-            <Avatar />
-            <Stack sx={{ ml: 1 }}>
-              <Typography variant="subtitle1">Judge</Typography>
-            </Stack>
-          </Stack>
         </Box>
-      </Stack>
-    </Box>
+      ) : (
+        <Backdrop
+          sx={{ color: "#fff", Index: (theme) => theme.zIndex.drawer + 1 }}
+          open={true}
+        >
+          <AlertDialog
+            open={true}
+            title="Waiting for other player"
+            contentText="Please wait for a player to join the room. You can share the link below with a friend to join:"
+            extraContent={
+              <Chip
+                icon={<ContentCopy />}
+                label={window.location.href}
+                onClick={() => {
+                  if (navigator.clipboard) {
+                    navigator.clipboard
+                      .writeText(window.location.href)
+                      .catch(console.log);
+                  }
+                }}
+              />
+            }
+            alertOnly
+          />
+        </Backdrop>
+      )}
+    </>
   ) : (
     <Backdrop
       sx={{ color: "#fff", Index: (theme) => theme.zIndex.drawer + 1 }}
       open={true}
     >
-      <CircularProgress color="inherit"/>
+      <CircularProgress color="inherit" />
     </Backdrop>
   );
 }
