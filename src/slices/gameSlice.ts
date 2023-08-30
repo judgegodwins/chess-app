@@ -15,11 +15,15 @@ export const gameSlice = createSlice({
   initialState,
   reducers: {
     setRoom: (state, action: PayloadAction<RoomResponse>) => {
+      console.log("ACTION PAYLOAD", action.payload)
       state.room = action.payload;
     },
+    clearRoom: (state) => {
+      state.room = undefined;
+    }
   },
 });
 
-export const { setRoom } = gameSlice.actions;
+export const { setRoom, clearRoom } = gameSlice.actions;
 
 export default gameSlice.reducer;

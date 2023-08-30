@@ -1,21 +1,20 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
-import { FailureResponse, SuccessResponse } from "../types/responses";
 import { ApiError } from "./ApiError";
+import { APIResponse } from "../types/responses";
 
-export const apiErrorParser = (e: Error | AxiosError<FailureResponse>) => {
-  console.log('code:', (e as any).code, (e as any).response);
+export const apiErrorParser = (e: Error | AxiosError<APIResponse>) => {
   if (axios.isAxiosError(e) && e.response) {
-    throw new ApiError(e.response?.data.message, e.response);
+    throw new ApiError(e.response?.data.message, e.response.status);
   } else {
     throw e;
   }
 }
 
-export const commonSuccessRespFilter = <RType extends SuccessResponse>(
+export const commonSuccessRespFilter = <RType extends APIResponse>(
   response: AxiosResponse<RType>
 ) => {
-  if (!response.data.success)
-    throw new Error(response.data.message);
+  if (response.data.status === "error")
+    throw new ApiError(response.data.message, response.status);
 
   return response;
-}
+};

@@ -1,18 +1,14 @@
-import axios, { AxiosResponse } from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { AxiosResponse } from "axios";
+import { useEffect, useState } from "react";
 import { FormikValues, useFormik } from "formik";
-import {
-  PaginatedResponse,
-  SuccessDataResponse,
-  SuccessResponse,
-} from "../types/responses";
-import { Maybe, ObjectSchema, ObjectShape, AnySchema, AnyObject } from "yup";
-// import { getAccessToken } from "helpers/authHelpers";
+import { ObjectSchema, AnyObject } from "yup";
+
 import {
   apiErrorParser,
   commonSuccessRespFilter,
 } from "../helpers/responseHelpers";
 import axiosHttp from "../utils/axiosHttp";
+import { PaginatedResponse, SuccessDataResponse } from "../types/responses";
 
 export function usePagination<DataType>(
   serviceAction: (
@@ -43,18 +39,24 @@ export function usePagination<DataType>(
   return { loading, error, data, hasMore };
 }
 
-interface UsePostProps<TReturnType, TData extends FormikValues, T extends ObjectSchema<AnyObject> = any> {
+interface UsePostProps<
+  TReturnType,
+  TData extends FormikValues,
+  T extends ObjectSchema<AnyObject> = any
+> {
   url: string;
   initialValues: TData;
   schema?: T;
-  type?: 'post' | 'patch';
+  type?: "post" | "patch";
   notify?: boolean;
   onComplete?: (data: TReturnType) => any;
 }
 
-export function usePost<TReturnType, TData extends FormikValues, TShape extends ObjectSchema<AnyObject>>(
-  options: UsePostProps<TReturnType, TData, TShape>,
-) {
+export function usePost<
+  TReturnType,
+  TData extends FormikValues,
+  TShape extends ObjectSchema<AnyObject>
+>(options: UsePostProps<TReturnType, TData, TShape>) {
   const [error, setError] = useState<string>();
   const [data, setData] = useState<TReturnType>();
   const [message, setMessage] = useState<string>();
@@ -65,7 +67,10 @@ export function usePost<TReturnType, TData extends FormikValues, TShape extends 
     initialValues: options.initialValues,
     validationSchema: options.schema,
     onSubmit: (values, { setSubmitting, resetForm }) => {
-      axiosHttp[options.type || 'post']<SuccessDataResponse<TReturnType>>(options.url, values)
+      axiosHttp[options.type || "post"]<SuccessDataResponse<TReturnType>>(
+        options.url,
+        values
+      )
         .then(commonSuccessRespFilter)
         .then(({ data: resData }) => {
           setData(resData.data);

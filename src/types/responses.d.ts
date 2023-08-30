@@ -1,5 +1,5 @@
-export interface SuccessResponse {
-  success: true;
+export interface APIResponse {
+  status: "success" | "error";
   message: string;
 }
 
@@ -8,21 +8,15 @@ export interface PaginatedResponse<Data> extends SuccessDataResponse<Data> {
   next?: {
     page: number;
     limit: number;
-  }
+  };
   prev?: {
     page: number;
     limit: number;
-  }
+  };
 }
 
-export interface SuccessDataResponse<Data> extends SuccessResponse {
-  data: Data
-}
-
-export interface FailureResponse {
-  success: false;
-  message: string;
-  data?: null | undefined;
+export interface SuccessDataResponse<Data> extends APIResponse {
+  data: Data;
 }
 
 export interface VerifyTokenResponse {
@@ -36,13 +30,16 @@ export interface CreateTokenResponse extends VerifyTokenResponse {
 
 interface Client {
   id: string;
-  socket_id: string;
+  client_id: string;
   username: string;
 }
 
 export interface RoomResponse {
   id: string;
-  clients: Client[];
+  player1: string;
+  player2: string;
+  player1_username: string;
+  player2_username: string;
   game_state: string;
-  creator: string;
+  active: "yes" | "no";
 }

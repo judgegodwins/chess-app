@@ -15,7 +15,7 @@ import { AuthDialog } from "../components/AuthDialog";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
 // import { setGameInit } from "../slices/gameSlice";
 import { updateAuth, verifyToken } from "../slices/authSlice";
-import Service from "../services";
+import { checkRoom, createRoom } from "../services";
 
 const CustomContainer = styled("div")(({ theme }) => ({
   width: "100%",
@@ -60,6 +60,7 @@ export default function Home() {
         open={unameDialogOpen}
         handleClose={() => setUnameDialogOpen(false)}
         onComplete={(data) => {
+          console.log("auth data", data);
           dispatch(
             updateAuth({
               ...data,
@@ -97,8 +98,8 @@ export default function Home() {
             startIcon={<PlayArrow />}
             onClick={() => {
               if (auth.status === "verified") {
-                Service.createRoom().then(({ data }) => {
-                  navigate(`/live/${data.data.id}`);
+                createRoom().then((data) => {
+                  navigate(`/live/${data.id}`);
                 });
               } else {
                 actionLine();
@@ -141,7 +142,7 @@ export default function Home() {
                 disabled={gameId.length < 1}
                 onClick={() => {
                   if (auth.status === "verified") {
-                    Service.checkRoom(gameId).then(({ data }) => {
+                    checkRoom(gameId).then((data) => {
                       navigate(`/live/${gameId}`);
                     }).catch(err => console.log('err verifying room', err));
                   } else {

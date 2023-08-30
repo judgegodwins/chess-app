@@ -26,7 +26,7 @@ export const verifyToken = createAsyncThunk("tokens/verify", async () => {
   if (!token) throw new Error('token not found');
 
   const response = await axiosHttp
-    .get<SuccessDataResponse<VerifyTokenResponse>>("/token/verify", {
+    .post<SuccessDataResponse<VerifyTokenResponse>>("/token/verify", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
