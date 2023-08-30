@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Button,
@@ -14,7 +14,7 @@ import UserEdu from "../svg/useredu.svg";
 import { AuthDialog } from "../components/AuthDialog";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
 // import { setGameInit } from "../slices/gameSlice";
-import { updateAuth, verifyToken } from "../slices/authSlice";
+import { updateAuth } from "../slices/authSlice";
 import { checkRoom, createRoom } from "../services";
 
 const CustomContainer = styled("div")(({ theme }) => ({

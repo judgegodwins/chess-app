@@ -34,7 +34,7 @@ export function usePagination<DataType>(
         setLoading(false);
       })
       .catch((e) => setError(true));
-  }, [page, limit]);
+  }, [page, limit, serviceAction]);
 
   return { loading, error, data, hasMore };
 }
