@@ -14,20 +14,16 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Chess, Move, Piece, Square } from "chess.js";
+import { Chess, Move, Square } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import AlertDialog from "../components/AlertDialog";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
-import { newEvent } from "../helpers/websocket/utils";
 import WebsocketHandler from "../helpers/websocket/handler";
 import { RoomPayload } from "../helpers/websocket/events";
 import { clearRoom, setRoom } from "../slices/gameSlice";
 import { ContentCopy } from "@mui/icons-material";
-import ConfirmDialog from "../components/ConfirmDialog";
 import { Client } from "../types/responses";
-import { checkRoom } from "../services";
 import { BoardOrientation } from "react-chessboard/dist/chessboard/types";
-import zIndex from "@mui/material/styles/zIndex";
 
 const defaultError = {
   head: "Failed to initialize game",

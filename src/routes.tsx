@@ -1,4 +1,4 @@
-import { Navigate, useRoutes, useNavigate } from "react-router-dom";
+import { useRoutes } from "react-router-dom";
 import Game from "./pages/Game";
 
 // import { useAppSelector } from "hooks/reduxHooks";
