@@ -76,9 +76,7 @@ export default function Home() {
           Play chess with your friends.
         </Typography>
         <Typography variant="subtitle1" color="textSecondary" gutterBottom>
-          We re-engineered the service we built for secure
-          <br />
-          business meetings, Google Meet, to make it free and available for all.
+          Start a new game and share the link with a friend to join the game
         </Typography>
         <Stack
           direction="row"
@@ -142,9 +140,11 @@ export default function Home() {
                 disabled={gameId.length < 1}
                 onClick={() => {
                   if (auth.status === "verified") {
-                    checkRoom(gameId).then((data) => {
-                      navigate(`/live/${gameId}`);
-                    }).catch(err => console.log('err verifying room', err));
+                    checkRoom(gameId)
+                      .then((data) => {
+                        navigate(`/live/${gameId}`);
+                      })
+                      .catch((err) => console.log("err verifying room", err));
                   } else {
                     actionLine();
                   }
