@@ -24,6 +24,7 @@ import { clearRoom, setRoom } from "../slices/gameSlice";
 import { ContentCopy } from "@mui/icons-material";
 import { Client } from "../types/responses";
 import { BoardOrientation } from "react-chessboard/dist/chessboard/types";
+import { AuthDialog } from "../components/AuthDialog";
 
 const defaultError = {
   head: "Failed to initialize game",
@@ -49,6 +50,8 @@ export default function Game() {
   const params = useParams();
   const [requestingPlayers, setRequestingPlayers] = useState<Client[]>([]);
   const [playerDisconnected, setPlayerDisconnected] = useState<boolean>(false);
+  const [connected, setConnected] = useState(false);
+  const [unameDialogOpen, setUnameDialogOpen] = useState(false);
 
   const ws = useMemo(() => {
     // console.log(auth.token);
@@ -139,13 +142,16 @@ export default function Game() {
 
   useEffect(() => {
     if (auth.status !== "verified") {
-      setEOpen(defaultError);
+      setUnameDialogOpen(true);
       return;
     }
 
     if (!ws.connection) return;
 
-    ws.connection.onopen = () => {
+    ws.on("open", () => {
+      console.log("-------------connection open----------------");
+      // on connection open, try to join or re-join (in case of a disconnection) room
+      setConnected(true);
       ws.sendEvent(
         "join_room",
         {
@@ -155,49 +161,43 @@ export default function Game() {
           setEOpen(defaultError);
         }
       );
+    });
 
-      ws.on("request_join", (data: Client) => {
-        setRequestingPlayers((prev) => [...prev, data]);
-      });
+    ws.on("request_join", (data: Client) => {
+      setRequestingPlayers((prev) => [...prev, data]);
+    });
 
-      ws.on("start_game", (data: RoomPayload) => {
-        console.log("ROOM PAYLOAD", data);
-        setRequestingPlayers([]);
-        dispatch(setRoom(data));
-      });
+    ws.on("start_game", (data: RoomPayload) => {
+      setRequestingPlayers([]);
+      dispatch(setRoom(data));
+    });
 
-      ws.on("piece_move", (data: { room_id: string; move: Move }) => {
-        console.log("data:", data);
-        makeAMove(data.move);
-      });
+    ws.on("piece_move", (data: { room_id: string; move: Move }) => {
+      makeAMove(data.move);
+    });
 
-      ws.on("conn_elsewhere", () => {
-        setEOpen({
-          head: "Connected elsewhere",
-          explanation:
-            "You've been disconnected from the game on this tab because you have joined the game from another tab.",
-        });
-        ws.destroy();
+    ws.on("conn_elsewhere", () => {
+      setEOpen({
+        head: "Connected elsewhere",
+        explanation:
+          "You've been disconnected from the game on this tab because you have joined the game from another tab.",
       });
-    };
-  }, [ws, auth.status, auth.id, params.id, dispatch, makeAMove]);
+      ws.destroy();
+    });
+
+    ws.on("close", () => {
+      setConnected(false);
+    });
+  }, [ws, ws.connection, auth.status, auth.id, params.id, dispatch, makeAMove]);
 
   useEffect(() => {
-    console.log("------------EFFECTING JOIN ROOM HANDLING--------------");
     ws.on("joined_room", (room: RoomPayload) => {
-      console.log(
-        "-----------------------JOINED ROOM-----------------------------"
-      );
       dispatch(setRoom(room));
-      console.log("chess.fen() before", chess.fen());
-      // console.log("fen before", fen);
+
       if (room.active === "yes") {
         try {
           chess.load(room.game_state);
           setFen(room.game_state);
-
-          console.log("chess.fen() after", chess.fen());
-          // console.log("fen after", fen);
         } catch (e) {
           setEOpen(defaultError);
         }
@@ -225,42 +225,6 @@ export default function Game() {
     });
   }, [game.room, ws]);
 
-  console.log("CHECKMATE", chess.isCheckmate());
-
-  // useEffect(() => {
-  //   if (auth.status !== "verified") {
-  //     setEOpen(true);
-  //   }
-  // }, [auth.status]);
-
-  // useEffect(() => {
-  //   try {
-  //     if (ws) {
-  //       ws.connection.onopen = () => {
-  //         if (gameInit && gameInit.action === "start") {
-  //           ws.sendEvent("create_room", {
-  //             gameState: chess.fen(),
-  //           });
-  //         }
-  //       };
-
-  //       // setTimeout(() => {
-  //       //   ws.connection.close(1000)
-  //       // }, 5000)
-
-  //       ws.on("error", console.log);
-  //     }
-  //     // TODO CHECK FOR WEBSOCKET SUPPORT BEFORE INITING
-  //     // TODO HANDLE WEBSOCKET ERROR AND ABRUPT CLOSURE (ADD RETRIES).
-  //     // conn.onerror = (e) => {
-  //     //   console.log(e.type)
-  //     // }
-
-  //   } catch (e) {
-  //     setEOpen(true);
-  //   }
-  // }, [ws, chess, gameInit]);
-
   if (eOpen) {
     // if any error occurred
     return (
@@ -270,6 +234,19 @@ export default function Game() {
         open={Boolean(eOpen)}
         handleClose={() => {
           navigate("/");
+        }}
+      />
+    );
+  }
+
+  if (unameDialogOpen) {
+    return (
+      <AuthDialog
+        open={unameDialogOpen}
+        handleClose={() => setUnameDialogOpen(false)}
+        onComplete={(data) => {
+          ws.connect()
+          setUnameDialogOpen(false);
         }}
       />
     );
@@ -296,14 +273,18 @@ export default function Game() {
                     secondaryAction={
                       <Button
                         onClick={() => {
-                          console.log("Player ------------", player)
-                          ws.sendEvent("accept_join_request", {
-                            room_id: game.room?.id,
-                            client_id: player.client_id,
-                            player_id: player.id,
-                          }, (err) => {
-                            alert(err.message);
-                          });
+                          console.log("Player ------------", player);
+                          ws.sendEvent(
+                            "accept_join_request",
+                            {
+                              room_id: game.room?.id,
+                              client_id: player.client_id,
+                              player_id: player.id,
+                            },
+                            (err) => {
+                              alert(err.message);
+                            }
+                          );
                         }}
                       >
                         Accept
@@ -371,63 +352,76 @@ export default function Game() {
         alignItems="center"
         sx={{ width: "100%", height: "100%" }}
       >
-        {playerDisconnected ? (
-          <Stack justifyContent="center" alignItems="center">
-            <CircularProgress />
-            <Typography marginTop={3} textAlign="center">
-              Your opponent has been disconnected. Please wait for them to
-              re-join.
-            </Typography>
+        <Card sx={{ width: "fit-content", p: 2 }}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            sx={{ width: "100%", mb: 1 }}
+          >
+            <Avatar />
+            <Stack sx={{ ml: 1 }}>
+              <Typography variant="h6">
+                {game.room?.player1 !== auth.id
+                  ? game.room?.player1_username
+                  : game.room?.player2_username}
+              </Typography>
+            </Stack>
           </Stack>
-        ) : (
-          <Card sx={{ width: "fit-content", p: 2 }}>
-            <Stack
-              direction="row"
-              alignItems="center"
-              sx={{ width: "100%", mb: 1 }}
+          <Stack direction="row">
+            <Box
+              sx={(theme) => ({
+                width: "40vw",
+                height: "100%",
+                [theme.breakpoints.down("md")]: {
+                  width: "100vw",
+                },
+              })}
             >
-              <Avatar />
-              <Stack sx={{ ml: 1 }}>
-                <Typography variant="h6">
-                  {game.room?.player1 !== auth.id
-                    ? game.room?.player1_username
-                    : game.room?.player2_username}
-                </Typography>
-              </Stack>
-            </Stack>
-            <Stack direction="row">
-              <Box
-                sx={(theme) => ({
-                  width: "40vw",
-                  height: "100%",
-                  [theme.breakpoints.down("md")]: {
-                    width: "100vw",
-                  },
-                })}
+              <Backdrop
+                sx={{
+                  color: "#fff",
+                  Index: 9999,
+                  zIndex: 9999,
+                }}
+                open={!connected || playerDisconnected}
               >
-                <Chessboard
-                  position={fen}
-                  onPieceDrop={onDrop}
-                  boardOrientation={orientation}
-                />
-              </Box>
+                <Stack alignItems="center" gap={1}>
+                  <CircularProgress color="inherit" />
+                  <Typography textAlign="center">
+                    {!connected &&
+                      "You've been disconnected. Retrying connection..."}
+                    {connected &&
+                      playerDisconnected &&
+                      "Your opponent has been disconnected. Please wait for them to re-join."}
+                  </Typography>
+                </Stack>
+              </Backdrop>
+
+              <Chessboard
+                position={fen}
+                onPieceDrop={onDrop}
+                boardOrientation={orientation}
+                customBoardStyle={{
+                  zIndex: 100,
+                }}
+              />
+            </Box>
+          </Stack>
+          <Stack
+            direction="row"
+            alignItems="center"
+            sx={{ width: "100%", mt: 1 }}
+          >
+            <Avatar />
+            <Stack sx={{ ml: 1 }}>
+              <Typography variant="h6">
+                {game.room?.player1 === auth.id
+                  ? game.room?.player1_username
+                  : game.room?.player2_username}
+              </Typography>
             </Stack>
-            <Stack
-              direction="row"
-              alignItems="center"
-              sx={{ width: "100%", mt: 1 }}
-            >
-              <Avatar />
-              <Stack sx={{ ml: 1 }}>
-                <Typography variant="h6">
-                  {game.room?.player1 === auth.id
-                    ? game.room?.player1_username
-                    : game.room?.player2_username}
-                </Typography>
-              </Stack>
-            </Stack>
-          </Card>
-        )}
+          </Stack>
+        </Card>
       </Stack>
     </Box>
   ) : (
