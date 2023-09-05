@@ -12,7 +12,7 @@ import { styled } from "@mui/material/styles";
 import { PlayArrow, Keyboard } from "@mui/icons-material";
 import UserEdu from "../svg/useredu.svg";
 import { AuthDialog } from "../components/AuthDialog";
-import { useAppDispatch, useAppSelector } from "../hooks/redux";
+import { useAppSelector } from "../hooks/redux";
 // import { setGameInit } from "../slices/gameSlice";
 import { checkRoom, createRoom } from "../services";
 import { LoadingButton } from "@mui/lab";
