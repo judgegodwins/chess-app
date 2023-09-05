@@ -10,6 +10,8 @@ import { object, string } from "yup";
 import { usePost } from "../hooks/apiHooks";
 import { FormikProvider, Form } from "formik";
 import { CreateTokenResponse } from "../types/responses";
+import { updateAuth } from "../slices/authSlice";
+import { useAppDispatch } from "../hooks/redux";
 
 const Schema = object({
   username: string().required("Username is required"),
@@ -17,9 +19,13 @@ const Schema = object({
 
 export function AuthDialog(props: {
   open: boolean;
+  // manualFinish?: boolean;
   handleClose: React.MouseEventHandler;
-  onComplete: (data: CreateTokenResponse) => any;
+  onComplete: (data: CreateTokenResponse, setSubmitting?: React.Dispatch<React.SetStateAction<boolean>>) => any;
 }) {
+  const dispatch = useAppDispatch();
+  // const [submitting, setSubmitting] = useState(false);
+
   const { formik } = usePost<CreateTokenResponse,
     { username: string },
     typeof Schema
@@ -31,7 +37,16 @@ export function AuthDialog(props: {
     notify: true,
     onComplete: (data) => {
       localStorage.setItem("token", data.token);
+      dispatch(
+        updateAuth({
+          ...data,
+          status: "verified",
+        })
+      );
+
       props.onComplete(data);
+
+      // if (!props.manualFinish) setSubmitting(false)
     },
   });
 

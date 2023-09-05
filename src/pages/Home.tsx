@@ -14,8 +14,8 @@ import UserEdu from "../svg/useredu.svg";
 import { AuthDialog } from "../components/AuthDialog";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
 // import { setGameInit } from "../slices/gameSlice";
-import { updateAuth } from "../slices/authSlice";
 import { checkRoom, createRoom } from "../services";
+import { LoadingButton } from "@mui/lab";
 
 const CustomContainer = styled("div")(({ theme }) => ({
   width: "100%",
@@ -34,8 +34,8 @@ const CustomContainer = styled("div")(({ theme }) => ({
 export default function Home() {
   const [unameDialogOpen, setUnameDialogOpen] = useState(false);
   const [gameId, setGameId] = useState<string>("");
+  const [joining, setJoining] = useState(false);
 
-  const dispatch = useAppDispatch();
   const auth = useAppSelector(({ auth }) => auth);
   const navigate = useNavigate();
 
@@ -60,14 +60,6 @@ export default function Home() {
         open={unameDialogOpen}
         handleClose={() => setUnameDialogOpen(false)}
         onComplete={(data) => {
-          console.log("auth data", data);
-          dispatch(
-            updateAuth({
-              ...data,
-              status: "verified",
-            })
-          );
-
           setUnameDialogOpen(false);
         }}
       />
@@ -134,24 +126,31 @@ export default function Home() {
               }}
             />
             {gameId && (
-              <Button
+              <LoadingButton
+                loading={joining}
                 variant="text"
                 sx={{ ml: 1 }}
                 disabled={gameId.length < 1}
                 onClick={() => {
+                  setJoining(true);
                   if (auth.status === "verified") {
                     checkRoom(gameId)
                       .then((data) => {
-                        navigate(`/live/${gameId}`);
+                        setJoining(false);
+                        navigate(`/live/${data.id}`);
                       })
-                      .catch((err) => console.log("err verifying room", err));
+                      .catch((err) => {
+                        console.log("err verifying room", err);
+                        setJoining(false);
+                      });
                   } else {
                     actionLine();
+                    setJoining(false);
                   }
                 }}
               >
                 Join
-              </Button>
+              </LoadingButton>
             )}
           </Stack>
         </Stack>
