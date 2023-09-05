@@ -34,7 +34,7 @@ const CustomContainer = styled("div")(({ theme }) => ({
 export default function Home() {
   const [unameDialogOpen, setUnameDialogOpen] = useState(false);
   const [gameId, setGameId] = useState<string>("");
-  const [joining, setJoining] = useState(false);
+  const [action, setAction] = useState<"creating" | "joining" | "">("");
 
   const auth = useAppSelector(({ auth }) => auth);
   const navigate = useNavigate();
@@ -82,22 +82,31 @@ export default function Home() {
             },
           })}
         >
-          <Button
+          <LoadingButton
+            loading={action === "creating"}
             disabled={auth.status === "verifying"}
             variant="contained"
             startIcon={<PlayArrow />}
             onClick={() => {
+              setAction("creating");
               if (auth.status === "verified") {
-                createRoom().then((data) => {
-                  navigate(`/live/${data.id}`);
-                });
+                createRoom()
+                  .then((data) => {
+                    setAction("");
+                    navigate(`/live/${data.id}`);
+                  })
+                  .catch((e) => {
+                    setAction("")
+                    console.log("could not load game");
+                  });
               } else {
                 actionLine();
+                setAction("")
               }
             }}
           >
             New game
-          </Button>
+          </LoadingButton>
           <Stack
             direction="row"
             sx={(theme) => ({
@@ -127,25 +136,25 @@ export default function Home() {
             />
             {gameId && (
               <LoadingButton
-                loading={joining}
+                loading={action === "joining"}
                 variant="text"
                 sx={{ ml: 1 }}
                 disabled={gameId.length < 1}
                 onClick={() => {
-                  setJoining(true);
+                  setAction("joining");
                   if (auth.status === "verified") {
                     checkRoom(gameId)
                       .then((data) => {
-                        setJoining(false);
+                        setAction("");
                         navigate(`/live/${data.id}`);
                       })
                       .catch((err) => {
                         console.log("err verifying room", err);
-                        setJoining(false);
+                        setAction("");
                       });
                   } else {
                     actionLine();
-                    setJoining(false);
+                    setAction("");
                   }
                 }}
               >
