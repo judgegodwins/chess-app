@@ -51,7 +51,6 @@ export default function Game() {
   const [requestingPlayers, setRequestingPlayers] = useState<Client[]>([]);
   const [playerDisconnected, setPlayerDisconnected] = useState<boolean>(false);
   const [connected, setConnected] = useState(false);
-  const [unameDialogOpen, setUnameDialogOpen] = useState(false);
 
   const ws = useMemo(() => {
     // console.log(auth.token);
@@ -141,10 +140,10 @@ export default function Game() {
   }, [ws, dispatch, chess]);
 
   useEffect(() => {
-    if (auth.status !== "verified") {
-      setUnameDialogOpen(true);
-      return;
-    }
+    // if (auth.status !== "verified") {
+    //   setUnameDialogOpen(true);
+    //   return;
+    // }
 
     if (!ws.connection) return;
 
@@ -239,14 +238,15 @@ export default function Game() {
     );
   }
 
-  if (unameDialogOpen) {
+  const noAuth = auth.status !== "verified" && auth.status !== "verifying"
+
+  if (noAuth) {
     return (
       <AuthDialog
-        open={unameDialogOpen}
-        handleClose={() => setUnameDialogOpen(false)}
+        open={noAuth}
+        handleClose={() => {}}
         onComplete={(data) => {
           ws.connect()
-          setUnameDialogOpen(false);
         }}
       />
     );
