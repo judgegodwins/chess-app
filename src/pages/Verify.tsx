@@ -30,7 +30,7 @@ export default function Verify() {
       <CircularProgress />
       <Typography textAlign="center">
         Please wait while the app loads 🥹. The backend server is deployed on a
-        free instance and is probably just waking up.
+        free instance and is probably just spinning up.
       </Typography>
     </Stack>
   ) : (
